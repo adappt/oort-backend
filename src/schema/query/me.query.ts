@@ -21,8 +21,8 @@ export default {
       if (!config.get('groups.manualCreation')) {
         try {
           Promise.all([
-            fetchUserGroupsFromService(user),
-            fetchUserAttributesFromService(user),
+            fetchUserGroupsFromService(user), // TODO move somewhere else -> must be hook
+            fetchUserAttributesFromService(user), // TODO move somewhere else -> must be hook
           ]);
         } catch (err) {
           logger.error(err);

@@ -62,7 +62,7 @@ module.exports = {
    * https://github.com/dchester/jsonpath
    */
   groups: {
-    manualCreation: true,
+    manualCreation: true, // indicates if groups come from external API or not
     fromService: {
       apiConfiguration: '',
       groups: {

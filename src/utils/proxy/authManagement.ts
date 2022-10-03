@@ -63,6 +63,7 @@ export const getToken = async (
       client_id: settings.apiClientID,
       client_secret: settings.safeSecret,
     };
+    console.log(settings);
     if (settings.scope) {
       details.scope = settings.scope;
     } else {
