@@ -51,13 +51,14 @@ export class CustomAPI extends RESTDataSource {
     );
   }
 
-  /**
-   * Try to override deduplicate
-   * @returns deduplicate policy
-   */
-  protected override requestDeduplicationPolicyFor() {
-    return { policy: 'do-not-deduplicate' } as const;
-  }
+  // /**
+  //  * Try to override deduplicate
+  //  * @returns deduplicate policy
+  //  */
+  // protected override requestDeduplicationPolicyFor() {
+  //   consol
+  //   return { policy: 'do-not-deduplicate' } as const;
+  // }
 
   /**
    * Pass auth token if needed.
