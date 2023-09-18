@@ -165,6 +165,7 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
   ) => {
     // Make sure that the page size is not too important
     checkPageSize(first);
+    console.log('First: ' + first);
     try {
       const user: User = context.user;
       if (!user) {
@@ -390,6 +391,7 @@ export default (entityName: string, fieldsByName: any, idsByName: any) =>
         ]);
         items = aggregation[0].items;
         totalCount = aggregation[0]?.totalCount[0]?.count || 0;
+        console.log(totalCount);
       } else {
         // If we're using cursors, get pagination filters  <---- DEPRECATED ??
         const cursorFilters = afterCursor

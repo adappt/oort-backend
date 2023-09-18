@@ -11,10 +11,11 @@ import i18next from 'i18next';
 import mongoose from 'mongoose';
 import { logger } from '@services/logger.service';
 import axios from 'axios';
-import { isEqual, isNil, get } from 'lodash';
+import { isEqual, isNil, get, flattenDeep, uniq } from 'lodash';
 import turf, { Feature, booleanPointInPolygon } from '@turf/turf';
 import dataSources, { CustomAPI } from '@server/apollo/dataSources';
 import { InMemoryLRUCache } from 'apollo-server-caching';
+import { getPolygons } from '@utils/gis/getCountryPolygons';
 
 /**
  * Interface of feature query
@@ -193,6 +194,7 @@ router.get('/feature', async (req, res) => {
   const latitudeField = get(req, 'query.latitudeField');
   const longitudeField = get(req, 'query.longitudeField');
   const geoField = get(req, 'query.geoField');
+  const admin0 = get(req, 'query.admin0');
   const layerType = get(req, 'query.type', GeometryType.POINT);
   const contextFilters = JSON.parse(
     decodeURIComponent(get(req, 'query.contextFilters', null))
@@ -220,6 +222,7 @@ router.get('/feature', async (req, res) => {
     geoField,
     longitudeField,
     latitudeField,
+    admin0,
   };
   try {
     // todo(gis): also implement reference data
@@ -279,6 +282,8 @@ router.get('/feature', async (req, res) => {
       } else if (layout) {
         query = buildQuery(layout.query);
         variables = {
+          skip: 0,
+          first: 1000,
           filter: {
             logic: 'and',
             filters: contextFilters
@@ -301,35 +306,57 @@ router.get('/feature', async (req, res) => {
           query,
           variables,
         },
-      }).then(({ data }) => {
+      }).then(async ({ data }) => {
         if (data.errors) {
           logger.error(data.errors[0].message);
         }
         for (const field in data.data) {
+          console.time('test');
+          console.timeLog('test');
           if (Object.prototype.hasOwnProperty.call(data.data, field)) {
             if (data.data[field].items?.length > 0) {
-              data.data[field].items.map(async function (result) {
-                getFeatureFromItem(
-                  featureCollection.features,
-                  layerType,
-                  result,
-                  mapping
-                );
-              });
+              // await getPolygons(featureCollection.features, []);
+              // data.data[field].items.map(async function (result) {
+              //   getFeatureFromItem(
+              //     featureCollection.features,
+              //     layerType,
+              //     result,
+              //     mapping
+              //   );
+              // });
             } else {
-              data.data[field].edges.map(async function (result) {
-                getFeatureFromItem(
-                  featureCollection.features,
-                  layerType,
-                  result.node,
-                  mapping
-                );
+              const codes = [];
+              console.log('Size: ' + data.data[field].edges.length);
+              data.data[field].edges.forEach((element) => {
+                codes.push(element.node.iso_2_codes);
+              });
+              const polygonsMapping = await getPolygons(
+                uniq(flattenDeep(codes).filter((x) => !isNil(x)))
+              );
+              data.data[field].edges.forEach((element) => {
+                const elementCodes = element.node.iso_2_codes;
+                if (elementCodes) {
+                  if (Array.isArray(elementCodes)) {
+                    for (const code of elementCodes) {
+                      if (get(polygonsMapping, code)) {
+                        featureCollection.features.push({
+                          geometry: get(polygonsMapping, code),
+                          properties: { ...element.node },
+                          type: 'Feature',
+                        });
+                      }
+                    }
+                  }
+                }
               });
             }
           }
+          console.timeLog('test');
         }
       });
       await Promise.all([gqlQuery]);
+      console.timeLog('test');
+      console.timeEnd('test');
     } else if (get(req, 'query.refData')) {
       const referenceData = await ReferenceData.findById(
         new mongoose.Types.ObjectId(get(req, 'query.refData'))
