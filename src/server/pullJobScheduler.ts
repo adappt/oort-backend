@@ -161,7 +161,7 @@ const fetchRecordsServiceToService = (
             .then(({ data: data2 }) => {
               if (data2 && data2.result) {
                 // eslint-disable-next-line @typescript-eslint/no-use-before-define
-                insertRecords(data2.result, pullJob);
+                insertRecords(data2.result, pullJob, true);
               }
             })
             .catch((err) => {
@@ -259,7 +259,8 @@ const accessFieldIncludingNested = (data: any, identifier: string): any => {
  */
 export const insertRecords = async (
   data: any[],
-  pullJob: PullJob
+  pullJob: PullJob,
+  isEIOS?: boolean
 ): Promise<void> => {
   const form = await Form.findById(pullJob.convertTo);
   if (form) {
@@ -382,6 +383,17 @@ export const insertRecords = async (
         element,
         unicityConditions.concat(linkedFieldsArray.flat())
       );
+      if (isEIOS) {
+        // Need to get roles and assign them
+        // Get a list of all regions for each item
+        let regionList: string[];
+        for (const [key, value] of Object.entries(mappedElement)) {
+          if (key === 'region') {
+            regionList = value as string[];
+          }
+        }
+      }
+
       // Adapt identifiers after mapping so if arrays are involved, it will correspond to each element of the array
       for (
         let unicityIndex = 0;
