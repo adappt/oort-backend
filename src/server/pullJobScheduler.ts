@@ -10,7 +10,6 @@ import {
   PullJob,
   Record as RecordModel,
   User,
-  Role,
   Application,
 } from '@models';
 import pubsub from './pubsub';
