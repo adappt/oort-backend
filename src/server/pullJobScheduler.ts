@@ -10,6 +10,8 @@ import {
   PullJob,
   Record as RecordModel,
   User,
+  Role,
+  Application,
 } from '@models';
 import pubsub from './pubsub';
 import { CronJob } from 'cron';
@@ -258,7 +260,11 @@ const accessFieldIncludingNested = (data: any, identifier: string): any => {
  * @returns list of user roles
  */
 const assignEIOSOwnership = (regionList: string[]): any => {
-  console.dir(regionList, { depth: null });
+  regionList.map(async (region) => {
+    // Get applications in regions
+    const applications = await Application.find({ name: { $regex: region } });
+    console.log(applications);
+  });
   return [];
 };
 
