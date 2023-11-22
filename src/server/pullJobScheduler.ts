@@ -252,10 +252,22 @@ const accessFieldIncludingNested = (data: any, identifier: string): any => {
 };
 
 /**
+ * Return ownership value according to list of regions
+ *
+ * @param regionList List of WHO regions
+ * @returns list of user roles
+ */
+const assignEIOSOwnership = (regionList: string[]): any => {
+  console.dir(regionList, { depth: null });
+  return [];
+};
+
+/**
  *  Use the fetched data to insert records into the dB if needed.
  *
  * @param data array of data fetched from API
  * @param pullJob pull job configuration
+ * @param isEIOS
  */
 export const insertRecords = async (
   data: any[],
@@ -390,6 +402,10 @@ export const insertRecords = async (
         for (const [key, value] of Object.entries(mappedElement)) {
           if (key === 'region') {
             regionList = value as string[];
+          }
+          if (regionList) {
+            const ownersList = assignEIOSOwnership(regionList);
+            console.log(ownersList);
           }
         }
       }
