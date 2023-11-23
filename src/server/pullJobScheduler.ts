@@ -11,6 +11,7 @@ import {
   Record as RecordModel,
   User,
   Application,
+  Role,
 } from '@models';
 import pubsub from './pubsub';
 import { CronJob } from 'cron';
@@ -256,15 +257,42 @@ const accessFieldIncludingNested = (data: any, identifier: string): any => {
  * Return ownership value according to list of regions
  *
  * @param regionList List of WHO regions
+ * @param signalHQPHIAppId Id of application Signal HQ PHI
  * @returns list of user roles
  */
-const assignEIOSOwnership = (regionList: string[]): any => {
-  regionList.map(async (region) => {
-    // Get applications in regions
-    const applications = await Application.find({ name: { $regex: region } });
-    console.log(applications);
+const assignEIOSOwnership = async (
+  regionList: string[],
+  signalHQPHIAppId: any
+): Promise<any[]> => {
+  const ownersList = [];
+  const signalHQPHIUserRole = await Role.findOne({
+    application: signalHQPHIAppId,
+    title: 'User',
   });
-  return [];
+  ownersList.push(signalHQPHIUserRole._id);
+  const filterList: any[] = [
+    {
+      $lookup: {
+        from: 'applications',
+        localField: 'application',
+        foreignField: '_id',
+        as: '_application',
+      },
+    },
+  ];
+  const regionFilters = [];
+  regionList.map((region) => {
+    regionFilters.push({
+      $and: [
+        { title: 'User' },
+        { _application: { $elemMatch: { name: { $regex: region } } } },
+      ],
+    });
+  });
+  filterList.push({ $match: { $or: regionFilters } });
+  const userRoles = await Role.aggregate([...filterList]);
+  ownersList.push(...userRoles.map((a) => a._id));
+  return ownersList;
 };
 
 /**
@@ -409,7 +437,14 @@ export const insertRecords = async (
             regionList = value as string[];
           }
           if (regionList) {
-            const ownersList = assignEIOSOwnership(regionList);
+            // Get User role for Signal HQ PHI
+            const applicationSignalHQPHI = await Application.find({
+              name: 'Signal HQ PHI',
+            });
+            const ownersList = await assignEIOSOwnership(
+              regionList,
+              applicationSignalHQPHI[0]._id
+            );
             console.log(ownersList);
           }
         }
