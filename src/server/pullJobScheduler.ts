@@ -445,7 +445,7 @@ export const insertRecords = async (
               regionList,
               applicationSignalHQPHI[0]._id
             );
-            console.log(ownersList);
+            mappedElement.ownership = ownersList;
           }
         }
       }
@@ -494,6 +494,7 @@ export const insertRecords = async (
             }
             return true;
           });
+      console.log(mappedElement);
       // If everything is fine, push it in the array for saving
       if (!isDuplicate) {
         transformRecord(mappedElement, form.fields);
