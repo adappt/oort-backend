@@ -110,6 +110,7 @@ export const getToken = async (
     return settings.token;
   }
   if (apiConfiguration.authType === authType.authorizationCode) {
+    console.log('ici');
     // Making sure to return only string, as access token is typed string | string[]
     return accessToken.toString();
     // Token doesn't need to be cached since the frontend always keeps it up-to-date

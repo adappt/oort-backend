@@ -66,6 +66,7 @@ const proxyAPIRequest = async (
       res.status(200).send(JSON.parse(cacheData));
     } else {
       const token = await getToken(api, req.headers.accesstoken, ping);
+      console.log(token);
       await axios({
         url,
         method: req.method,
