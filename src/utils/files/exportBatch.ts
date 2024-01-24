@@ -637,7 +637,6 @@ const getRecords = async (
    * - reference data
    * - links to other resources, when resource is used as field in related resource ( value not directly in data field )
    */
-  console.time('export');
   const records = await Record.aggregate<Record>(
     buildPipeline(columns, params)
   );
@@ -709,9 +708,14 @@ const getRecords = async (
       console.timeLog('export');
     })
   );
-  console.log('HERE');
+  console.log('Fetching reference data');
+  console.timeLog('export');
   await getReferenceData(referenceDataColumns, params.resource, req, records);
+  console.log('Fetching all promises');
+  console.timeLog('export');
   await Promise.all(promises);
+  console.log('All records ready');
+  console.timeLog('export');
   return records;
 };
 
@@ -726,6 +730,8 @@ const getRecords = async (
 export default async (req: any, res: Response, params: ExportBatchParams) => {
   // Get total count and columns
   const columns = await getColumns(req, params);
+  console.log('Columns fetched');
+  console.timeLog('export');
   const records: Record[] = await getRecords(params, columns, req);
   switch (params.format) {
     case 'xlsx': {

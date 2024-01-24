@@ -32,6 +32,7 @@ import { sendEmail } from '@utils/email';
 import exportBatch from '@utils/files/exportBatch';
 import { accessibleBy } from '@casl/mongoose';
 import dataSources from '@server/apollo/dataSources';
+import exportTest from '@utils/files/exportTest';
 
 /**
  * Exports files in csv or xlsx format, excepted if specified otherwise
@@ -329,6 +330,7 @@ router.get('/resource/records/:id', async (req, res) => {
  */
 router.post('/records', async (req, res) => {
   try {
+    console.time('export');
     const params = req.body;
 
     // Send res accordingly to parameters
@@ -347,10 +349,13 @@ router.post('/records', async (req, res) => {
         },
       })
       .getFilter();
-    const resource = await Resource.findOne(filters);
+    const resource = await Resource.findOne(filters).select('fields');
     if (!resource) {
       return res.status(404).send(i18next.t('common.errors.dataNotFound'));
     }
+
+    console.log('Context ready');
+    console.timeLog('export');
 
     // Make distinction if we send the file by email or in the response
     if (!params.email) {
@@ -373,7 +378,7 @@ router.post('/records', async (req, res) => {
           );
         }
       }
-      await exportBatch(req, res, params);
+      await exportTest(req, res, resource, params);
     } else {
       // Send response so the client is not frozen
       res.status(200).send('Export ongoing');

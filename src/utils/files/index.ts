@@ -9,3 +9,4 @@ export * from './loadRow';
 export * from './getColumnsFromMeta';
 export * from './getRowsFromMeta';
 export * from './extractGridData';
+export * from './exportTest';
