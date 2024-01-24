@@ -73,7 +73,7 @@ const getColumnsFromFields = async (resource: Resource, fields: any[]) => {
   return columns;
 };
 
-const recordPipeline = (resource, params, columns, skip, limit) => {
+const recordPipeline = (ids, params, columns) => {
   const projectStep = {
     $project: {
       ...columns.reduce((acc, col) => {
@@ -100,24 +100,19 @@ const recordPipeline = (resource, params, columns, skip, limit) => {
       }, {}),
     },
   };
-  const pipeline = [
+  const pipeline: any[] = [
     {
       $match: {
-        $and: [
-          { resource: resource._id },
-          getFilter(params.filter, columns),
-          { archived: { $ne: true } },
-        ],
+        _id: {
+          $in: ids,
+        },
       },
     },
-    projectStep,
-    { $skip: skip },
-    { $limit: limit },
   ];
   columns
     .filter((col) => col.meta?.field?.isCalculated)
     .forEach((col) =>
-      pipeline.unshift(
+      pipeline.push(
         ...(buildCalculatedFieldPipeline(
           col.meta.field.expression,
           col.meta.field.name,
@@ -125,6 +120,7 @@ const recordPipeline = (resource, params, columns, skip, limit) => {
         ) as any)
       )
     );
+  pipeline.push(projectStep);
   return pipeline;
 };
 
@@ -139,19 +135,34 @@ const getRecords = async (resource, params, columns) => {
         ],
       },
     },
-    { $group: { _id: null, count: { $sum: 1 } } },
+    {
+      $facet: {
+        items: [
+          {
+            $project: {
+              _id: 1,
+            },
+          },
+        ],
+        totalCount: [
+          {
+            $count: 'count',
+          },
+        ],
+      },
+    },
   ]);
-  const totalCount = countAggregation[0].count;
-  console.log(totalCount);
+  console.log('Count done');
+  console.timeLog('export');
+  const recordIds: any[] = countAggregation[0].items.map((x) => x._id);
+  const totalCount = countAggregation[0].totalCount[0].count;
   const records: any[] = [];
   const promises: Promise<any>[] = [];
-  const pageSize = 250;
-  console.log(recordPipeline(resource, params, columns, 0, 0));
+  const pageSize = 100;
   for (let i = 0; i < totalCount; i += pageSize) {
+    const ids = recordIds.slice(i, i + pageSize);
     promises.push(
-      Record.aggregate(
-        recordPipeline(resource, params, columns, i, pageSize)
-      ).then(
+      Record.aggregate(recordPipeline(ids, params, columns)).then(
         // eslint-disable-next-line @typescript-eslint/no-loop-func
         (page) => {
           // console.log('Records from: ', i, ' to ', i + pageSize);
