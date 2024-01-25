@@ -320,7 +320,7 @@ const getRowsXlsx = async (
   const promises: Promise<any>[] = [];
   const records: any[] = [];
   console.log('Getting rows');
-  console.time('export');
+  console.timeLog('export');
   do {
     try {
       promises.push(
@@ -366,7 +366,7 @@ const getRowsXlsx = async (
     offset += batchSize;
   } while (offset < totalCount);
   console.log('Writing rows');
-  console.time('export');
+  console.timeLog('export');
   writeRowsXlsx(
     worksheet,
     getFlatColumns(columns),
