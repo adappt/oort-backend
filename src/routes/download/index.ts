@@ -378,7 +378,8 @@ router.post('/records', async (req, res) => {
           );
         }
       }
-      await exportTest(req, res, resource, params);
+      await exportBatch(req, res, params);
+      // await exportTest(req, res, resource, params);
     } else {
       // Send response so the client is not frozen
       res.status(200).send('Export ongoing');
