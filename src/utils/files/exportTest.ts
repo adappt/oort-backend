@@ -201,6 +201,7 @@ export default async (
       console.timeLog('export');
       // console.log(columns);
       const records = await getRecords(resource, params, columns);
+      console.log(records.length);
       console.log('Sending file');
       console.timeEnd('export');
       // Close workbook
