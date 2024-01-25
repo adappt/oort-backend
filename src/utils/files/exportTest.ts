@@ -156,7 +156,7 @@ const getRecords = async (resource, params, columns) => {
   console.timeLog('export');
   const recordIds: any[] = countAggregation[0].items.map((x) => x._id);
   const totalCount = countAggregation[0].totalCount[0].count;
-  const records: any[] = [];
+  let records: any[] = [];
   const promises: Promise<any>[] = [];
   const pageSize = 100;
   for (let i = 0; i < totalCount; i += pageSize) {
@@ -166,7 +166,7 @@ const getRecords = async (resource, params, columns) => {
         // eslint-disable-next-line @typescript-eslint/no-loop-func
         (page) => {
           // console.log('Records from: ', i, ' to ', i + pageSize);
-          records.concat(page);
+          records = records.concat(page);
         }
       )
     );
