@@ -316,57 +316,63 @@ const getRowsXlsx = async (
   // todo: optimize in order to avoid using graphQL?
   const query = buildQuery(params.query);
   let offset = 0;
-  const batchSize = 1000;
+  const batchSize = 100;
+  const promises: Promise<any>[] = [];
+  const records: any[] = [];
+  console.log('Getting rows');
+  console.time('export');
   do {
     try {
-      await axios({
-        url: `${config.get('server.url')}/graphql`,
-        method: 'POST',
-        headers: {
-          Authorization: req.headers.authorization,
-          'Content-Type': 'application/json',
-          ...(req.headers.accesstoken && {
-            accesstoken: req.headers.accesstoken,
-          }),
-        },
-        data: {
-          query,
-          variables: {
-            first: batchSize,
-            skip: offset,
-            sortField: params.sortField,
-            sortOrder: params.sortOrder,
-            filter: params.filter,
-            display: true,
+      promises.push(
+        axios({
+          url: `${config.get('server.url')}/graphql`,
+          method: 'POST',
+          headers: {
+            Authorization: req.headers.authorization,
+            'Content-Type': 'application/json',
+            ...(req.headers.accesstoken && {
+              accesstoken: req.headers.accesstoken,
+            }),
           },
-        },
-      })
-        // eslint-disable-next-line @typescript-eslint/no-loop-func
-        .then(({ data }) => {
-          if (data.errors) {
-            logger.error(data.errors[0].message);
-          }
-          for (const field in data.data) {
-            if (Object.prototype.hasOwnProperty.call(data.data, field)) {
-              if (data.data[field]) {
-                writeRowsXlsx(
-                  worksheet,
-                  getFlatColumns(columns),
-                  getRowsFromMeta(
-                    columns,
-                    data.data[field].edges.map((x) => x.node)
-                  )
-                );
+          data: {
+            query,
+            variables: {
+              first: batchSize,
+              skip: offset,
+              sortField: params.sortField,
+              sortOrder: params.sortOrder,
+              filter: params.filter,
+              display: true,
+            },
+          },
+        })
+          // eslint-disable-next-line @typescript-eslint/no-loop-func
+          .then(({ data }) => {
+            if (data.errors) {
+              logger.error(data.errors[0].message);
+            }
+            for (const field in data.data) {
+              if (Object.prototype.hasOwnProperty.call(data.data, field)) {
+                if (data.data[field]) {
+                  records.push(data.data[field].edges.map((x) => x.node));
+                }
               }
             }
-          }
-        });
+          })
+      );
     } catch (err) {
       logger.error(err);
     }
-
     offset += batchSize;
   } while (offset < totalCount);
+  console.log('Writing rows');
+  console.time('export');
+  writeRowsXlsx(
+    worksheet,
+    getFlatColumns(columns),
+    getRowsFromMeta(columns, records)
+  );
+  Promise.all(promises);
 };
 
 /**
@@ -453,11 +459,14 @@ const getRowsCsv = async (
  * @returns xlsx or csv buffer
  */
 export default async (req: any, params: ExportBatchParams) => {
+  console.time('export');
   // Get total count and columns
   const [totalCount, columns] = await Promise.all([
     getTotalCount(req, params),
     getColumns(req, params),
   ]);
+  console.log('Total count & columns');
+  console.timeLog('export');
   switch (params.format) {
     case 'xlsx': {
       // Create file
@@ -470,7 +479,8 @@ export default async (req: any, params: ExportBatchParams) => {
 
       // Write rows
       await getRowsXlsx(req, params, totalCount, worksheet, columns);
-
+      console.log('Ready to send');
+      console.timeEnd('export');
       return workbook.xlsx.writeBuffer();
     }
     case 'csv': {
