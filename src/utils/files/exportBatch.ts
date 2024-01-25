@@ -365,6 +365,7 @@ const getRowsXlsx = async (
     }
     offset += batchSize;
   } while (offset < totalCount);
+  await Promise.all(promises);
   console.log('Writing rows');
   console.timeLog('export');
   writeRowsXlsx(
@@ -372,7 +373,6 @@ const getRowsXlsx = async (
     getFlatColumns(columns),
     getRowsFromMeta(columns, records)
   );
-  Promise.all(promises);
 };
 
 /**
