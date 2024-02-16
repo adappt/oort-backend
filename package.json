@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "NODE_PATH=./build node build/src/index.js",
+    "start": "ALLOW_CONFIG_MUTATIONS=true NODE_PATH=./build node build/src/index.js",
     "build": "tsc -p tsconfig.json && tsconfig-replace-paths -p tsconfig.json",
     "dev": "nodemon -r tsconfig-paths/register -r dotenv/config src/index.ts",
     "lint": "eslint . --ext .ts",
