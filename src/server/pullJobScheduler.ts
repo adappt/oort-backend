@@ -530,11 +530,31 @@ export const insertRecords = async (
     }
   }
   let insertReportMessage = '';
-  const insertedRecords = await RecordModel.insertMany(records);
+  try {
+    await RecordModel.insertMany(records);
+  } catch (err) {
+    while (err && err.code === 11000) {
+      const nextId = await getNextId(
+        String(form.resource ? form.resource : pullJob.convertTo)
+      );
+      // eslint-disable-next-line @typescript-eslint/no-loop-func
+      records.map((elt) => {
+        if (
+          elt.incrementalId === err.toString().split('"')[1] &&
+          elt.form == pullJob.convertTo
+        ) {
+          elt.incrementalId = nextId;
+        }
+      });
+      // Re-try insertion, TO DO
+      err.code = null;
+    }
+  }
+
   if (fromRoute) {
-    insertReportMessage = `${insertedRecords.length} new records of form "${form.name}" created from records insertion route`;
+    insertReportMessage = `${records.length} new records of form "${form.name}" created from records insertion route`;
   } else {
-    insertReportMessage = `${insertedRecords.length} new records of form "${form.name}" created from pulljob "${pullJob.name}"`;
+    insertReportMessage = `${records.length} new records of form "${form.name}" created from pulljob "${pullJob.name}"`;
   }
   logger.info(insertReportMessage);
   if (pullJob.channel && records.length > 0) {
